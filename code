@@ -1,0 +1,75 @@
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+
+// Define sensor pins
+#define SOIL_MOISTURE_PIN A0
+#define PUMP_PIN 5
+
+// Define thresholds
+#define SOIL_MOISTURE_THRESHOLD 500 // Adjust based on soil moisture sensor calibration
+
+// Define pump control variables
+bool isPumpOn = false;
+
+// Initialize BME280 sensor object
+Adafruit_BME280 bme;
+
+void setup() {
+  Serial.begin(9600);
+
+  // Initialize BME280 sensor
+  if (!bme.begin()) {
+    Serial.println("Could not find BME280 sensor, check wiring!");
+    while (1);
+  }
+
+  // Set pump pin as output
+  pinMode(PUMP_PIN, OUTPUT);
+}
+
+void loop() {
+  // Read soil moisture level
+  int soilMoisture = analogRead(SOIL_MOISTURE_PIN);
+
+  // Read temperature, humidity, and pressure from BME280 sensor
+  float temperature = bme.readTemperature();
+  float humidity = bme.readHumidity();
+  float pressure = bme.readPressure() / 100.0; // Convert Pa to hPa
+
+  // Check soil moisture level
+  if (soilMoisture < SOIL_MOISTURE_THRESHOLD && !isPumpOn) {
+    // Soil is dry, turn on pump
+    turnOnPump();
+  } else if (soilMoisture >= SOIL_MOISTURE_THRESHOLD && isPumpOn) {
+    // Soil is moist, turn off pump
+    turnOffPump();
+  }
+
+  // Print sensor data
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.println(" °C");
+  Serial.print("Humidity: ");
+  Serial.print(humidity);
+  Serial.println(" %");
+  Serial.print("Pressure: ");
+  Serial.print(pressure);
+  Serial.println(" hPa");
+  Serial.print("Soil Moisture: ");
+  Serial.println(soilMoisture);
+
+  delay(1000); // Adjust delay time as needed
+}
+
+void turnOnPump() {
+  digitalWrite(PUMP_PIN, HIGH);
+  isPumpOn = true;
+  Serial.println("Pump turned on");
+}
+
+void turnOffPump() {
+  digitalWrite(PUMP_PIN, LOW);
+  isPumpOn = false;
+  Serial.println("Pump turned off");
+}
